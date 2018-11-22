@@ -1,25 +1,70 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-
-
-## Loading and preprocessing the data
-
-
+Course Project 1
+==============================================================
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+activity <- read.csv("activity.csv")
+activity$date <- as.Date(activity$date,format="%Y-%m-%d")
 
+sumdatadate <- setNames(aggregate(activity$steps, by=list(date=activity$date), FUN=sum, na.rm=TRUE), c("date","steps"))
+hist(sumdatadate$steps, main ="Total number of steps taken per day", xlab="Number of steps",col="lightblue")
+mean <- round(mean (sumdatadate$steps,na.rm = TRUE),digits=0)
+mean
+median <- round(median(sumdatadate$steps,na.rm = TRUE),digits=0)
+median
+```
 
 ## What is the average daily activity pattern?
 
+```{r}
+sumdatainterval <- setNames(aggregate(activity$steps, by=list(interval=activity$interval), FUN=mean, na.rm=TRUE), c("interval","steps"))
+with(sumdatainterval,plot(steps ~ interval, type = "l",main ="Average daily activity pattern", xlab="5-minute interval ",col="blue"))
+```
 
+Let's now look at the 5-minute interval which, on average across all the days in the dataset, contains the maximum number of steps.
+
+```{r}
+max <- sumdatainterval[which.max(sumdatainterval$steps),]
+max
+```
 
 ## Imputing missing values
 
+```{r}
+sumna <- sum(is.na(activity$steps))
+```
 
+There are `r sumna` missing values in the dataset.
+
+All missing values are going to be filled using the corresponding mean for that 5-minute interval.
+
+```{r}
+library(zoo)
+activity2 <- activity
+activity2$steps <- ave(activity2$steps, activity2$interval, FUN=na.aggregate)
+sumdatadate2 <- setNames(aggregate(activity2$steps, by=list(date=activity2$date), FUN=sum, na.rm=FALSE), c("date","steps"))
+hist(sumdatadate2$steps, main ="Total number of steps taken per day", xlab="Number of steps",col="lightblue")
+mean2 <- round(mean (sumdatadate2$steps,na.rm = FALSE),digits=0)
+mean2
+median2 <- round(median (sumdatadate2$steps,na.rm = FALSE),digits=0)
+median2
+```
+
+Both the mean and median number of steps taken per day are higher and very similar when imputing missing value.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+activity2$weekday=weekdays(activity2$date)
+activity2$class <- ifelse(activity2$weekday %in% c("Saturday", "Sunday"), "weekend", "weekday")
+activity2weekday <- subset(activity2,class=="weekday")
+activity2weekend <- subset(activity2,class=="weekend")
+sumdataintervalweekday <- setNames(aggregate(activity2weekday$steps, by=list(interval=activity2weekday$interval), FUN=mean, na.rm=TRUE), c("interval","steps"))
+sumdataintervalweekend <- setNames(aggregate(activity2weekend$steps, by=list(interval=activity2weekend$interval), FUN=mean, na.rm=TRUE), c("interval","steps"))
+par(mfrow=c(2,1), mar=c(3,2,2,2))
+with(sumdataintervalweekday,plot(steps ~ interval, type = "l",main ="Weekday", xlab="5-minute interval ",col="blue"))
+with(sumdataintervalweekend,plot(steps ~ interval, type = "l",main ="Weekend", xlab="5-minute interval ",col="blue"))
+```
+
+
